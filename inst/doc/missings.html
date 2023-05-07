@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Modes and missing values</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Modes and missing values</h1>
+
+
+
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(moder)</span></code></pre></div>
+<p>What makes moder special is the way it handles missing values. It has
+two main guiding principles:</p>
+<ol style="list-style-type: decimal">
+<li>Mode functions should return <code>NA</code> if and only if the data
+cannot answer the user’s question.</li>
+<li>Any deviation from point 1 should be the result of an explicit
+choice by the user.</li>
+</ol>
+<p>Both points directly follow from R’s general approach towards missing
+values. This vignette explains them in some detail. Finally, it spells
+out the underlying theory. I recommend reading <a href="https://lhdjung.github.io/moder/index.html#get-started">“Get
+started”</a> first if you haven’t already.</p>
+<div id="return-na-only-if-question-cant-be-answered" class="section level2">
+<h2>1. Return <code>NA</code> only if question can’t be answered</h2>
+<div id="general-points" class="section level3">
+<h3>General points</h3>
+<p><code>NA</code> is not some other value that shows up in the data. It
+is a placeholder for any and all values that we don’t know, so we should
+treat it accordingly. This is why <code>mean()</code> and
+<code>median()</code> sometimes return <code>NA</code>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">7</span>, <span class="dv">7</span>, <span class="dv">7</span>, <span class="dv">8</span>, <span class="dv">8</span>, <span class="dv">9</span>, <span class="dv">9</span>, <span class="cn">NA</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(x1)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] NA</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">median</span>(x1)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] NA</span></span></code></pre></div>
+<p>We don’t know the true value behind <code>NA</code>, so we don’t know
+how it would influence the mean or the median. This is always true for
+the mean (but not for the median).<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> What about the mode? Missing values will
+sometimes, but not always, render it unknown. Therefore, mode
+implementations require special care and nuance.</p>
+<p>In <code>x1</code>, we know that <code>7</code> is a mode. It appears
+three times, and even if the <code>NA</code> was actually an
+<code>8</code> or a <code>9</code>, that value would only appear three
+times, as well. This means we know one mode, but not necessarily the
+whole set of modes. <code>mode_first()</code> is happy to return
+<code>7</code>, but <code>mode_all()</code> insists on the complete set
+of modes. It can’t be determined, so the function returns
+<code>NA</code>:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>x1</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1]  7  7  7  8  8  9  9 NA</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_first</span>(x1)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 7</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_all</span>(x1)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] NA</span></span></code></pre></div>
+<p>Some distributions have a clear set of modes even though some of its
+values are missing. Here, <code>1</code> is more frequent than
+<code>0</code> even if each <code>NA</code> masks another
+<code>0</code>:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>x2 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="cn">NA</span>, <span class="cn">NA</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_first</span>(x2)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 1</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_all</span>(x2)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 1</span></span></code></pre></div>
+<p>Where is <code>mode_single()</code> in all of this? It calls
+<code>mode_all()</code> internally, so it handles missing values just
+like this function does. Differences only occur if
+<code>mode_all()</code> returns multiple modes.</p>
+</div>
+<div id="modal-metadata" class="section level3">
+<h3>Modal metadata</h3>
+<p>All of these functions attempt to find modal values. However, moder
+also has some functions that are not concerned about any particular
+modes but only assess metadata, such as the modal frequency. This is why
+they can sometimes obtain useful information where
+<code>mode_first()</code> and friends would only return <code>NA</code>.
+Even if the number or frequency of modes can’t be determined, at least a
+range for them can be given. See <code>vignette(&quot;metadata&quot;)</code> to
+learn more.</p>
+<p>In particular, all the metadata functions have a
+<code>max_unique</code> argument. It allows you to encode some knowledge
+you might have about the missing values in your data. See
+<code>vignette(&quot;metadata&quot;)</code>, section <em>Maximal number of unique
+values</em>.</p>
+</div>
+<div id="possible-minimal-and-maximal-sets-of-modes" class="section level3">
+<h3>Possible (minimal and maximal) sets of modes</h3>
+<p>You might want to find all values that are known to be modes, even if
+missing values make it unclear whether certain other values are. Use
+<code>mode_possible_min()</code> for this. You can think of the function
+as a less strict version of <code>mode_all()</code>: It also takes all
+modes it can find, but unlike <code>mode_all()</code>, it doesn’t insist
+on the full set of modes.</p>
+<p>Either <code>8</code> or <code>9</code> may be a mode, depending on
+<code>NA</code>, but <code>7</code> is a mode in any case:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>x1</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1]  7  7  7  8  8  9  9 NA</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_possible_min</span>(x1)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 7</span></span></code></pre></div>
+<p>Here, <code>&quot;a&quot;</code> is definitely a mode, <code>&quot;b&quot;</code> is only
+a mode if the missing value is also <code>&quot;b&quot;</code>, but
+<code>&quot;c&quot;</code> can’t be a mode:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_possible_min</span>(<span class="fu">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;a&quot;</span>, <span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>, <span class="cn">NA</span>))</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] &quot;a&quot;</span></span></code></pre></div>
+<p>Other distributions may not have a clear minimum because too many of
+its values are missing. If both <code>NA</code>s below are
+<code>FALSE</code>, then <code>FALSE</code> is the mode. Otherwise,
+<code>TRUE</code> is:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_possible_min</span>(<span class="fu">c</span>(<span class="cn">TRUE</span>, <span class="cn">TRUE</span>, <span class="cn">FALSE</span>, <span class="cn">NA</span>, <span class="cn">NA</span>))</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] NA</span></span></code></pre></div>
+<p>The mirror image of <code>mode_possible_min()</code> is
+<code>mode_possible_max()</code>. It returns the greatest possible set
+of modes, given the number of missing values. This is all about the
+theoretical maximum, so the function can return values that are not
+guaranteed to be modes!</p>
+<p>As above, <code>&quot;a&quot;</code> is a known mode, <code>&quot;b&quot;</code> may be a
+mode, but <code>&quot;c&quot;</code> can’t be one:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_possible_max</span>(<span class="fu">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;a&quot;</span>, <span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>, <span class="cn">NA</span>))</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] &quot;a&quot; &quot;b&quot;</span></span></code></pre></div>
+<p>There is no clear maximum in <code>x1</code> because either
+<code>8</code> or <code>9</code> can be a mode, but not both together.
+With one more <code>7</code>, though, <code>7</code> is more frequent
+anyways:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>x1</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1]  7  7  7  8  8  9  9 NA</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_possible_max</span>(x1)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] NA</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_possible_max</span>(<span class="fu">c</span>(x1, <span class="dv">7</span>))</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 7</span></span></code></pre></div>
+</div>
+</div>
+<div id="still-return-non-na-value-only-if-chosen-by-user" class="section level2">
+<h2>2. Still return non-<code>NA</code> value only if chosen by
+user</h2>
+<div id="ignoring-nas" class="section level3">
+<h3>Ignoring <code>NA</code>s</h3>
+<p>Each moder function that attempts to determine (actual) modes has an
+<code>na.rm</code> argument. This works exactly like in
+<code>mean()</code> and <code>median()</code>: It’s <code>FALSE</code>
+by default, but if the user sets it to <code>TRUE</code>, missing values
+are removed from <code>x</code> before the statistic is computed.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>x1</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1]  7  7  7  8  8  9  9 NA</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(x1, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 7.857143</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">median</span>(x1, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 8</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_all</span>(x1, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 7</span></span></code></pre></div>
+<p>You should think really carefully before removing <code>NA</code>s.
+Are you sure the missing values are unnecessary to answer your specific
+question?</p>
+<p>This approach makes sure to inform the user if the data can’t answer
+their questions. They might still choose to ignore missings, but this
+will always require an explicit statement. In this way, users will know
+what they are doing, and can make their own decisions about data
+analysis.</p>
+</div>
+<div id="the-first-known-mode" class="section level3">
+<h3>The first known mode</h3>
+<p><code>mode_first()</code> has a Boolean <code>accept</code> argument
+that is <code>FALSE</code> by default. If set to <code>TRUE</code>, the
+function will pick the first value known to be a mode. This means it
+won’t strictly look for the first-appearing value that is a mode, but
+accept the first value that is a mode without counting <code>NA</code>s
+in its favor:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>x4 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="dv">1</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_first</span>(x4)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] NA</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_first</span>(x4, <span class="at">accept =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 4</span></span></code></pre></div>
+<p>The <code>NA</code>s might both be <code>6</code>, and a known
+<code>6</code> appears at the very start, so this might be the first
+mode. It’s unclear, so we get <code>NA</code> by default. However,
+<code>4</code> is the first value that we <em>know</em> is a mode.
+Setting <code>accept</code> to <code>TRUE</code> makes the function
+pragmatically accept <code>4</code> — we want to find a mode, after all,
+and we know one.</p>
+</div>
+<div id="minimum-and-complete-sets-of-modes" class="section level3">
+<h3>Minimum and complete sets of modes</h3>
+<p>In <code>mode_single()</code> as well, <code>accept</code> is
+<code>FALSE</code> by default. The purpose is to check whether there is
+exactly one mode by using the complete set of modes, not the minimum set
+that just so happens to be known. Set <code>accept</code> to
+<code>TRUE</code> to avoid returning <code>NA</code> when one mode is
+known, but not all modes are:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>x5 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">7</span>, <span class="dv">7</span>, <span class="cn">NA</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_single</span>(x5)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] NA</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">mode_single</span>(x5, <span class="at">accept =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 4</span></span></code></pre></div>
+</div>
+</div>
+<div id="theory" class="section level2">
+<h2>Theory</h2>
+<div id="taking-nas-seriously-enough" class="section level3">
+<h3>Taking <code>NA</code>s seriously enough</h3>
+<p>Some earlier mode functions for R treat <code>NA</code> like a known
+and constant value. This is suboptimal because <code>NA</code> means
+that a value is missing. Such an approach effectively assumes that all
+<code>NA</code>s represent the same unknown value, and that it’s
+different from all known values (although I’m sure this was not the
+intention).</p>
+<p>Rather than forming a distinct and cohesive group, however, the
+<code>NA</code>s may represent one or more known or unknown values, so
+this procedure can distort the data. Consider that <code>NA == NA</code>
+returns <code>NA</code>: If any two values are unknown, it’s also
+unknown whether they are equal (Wickham 2019, <a href="https://adv-r.hadley.nz/vectors-chap.html#missing-values">ch. 3.2.3</a>).</p>
+<p>What’s more, categorizing missing values as a separate group is
+actually an imputation strategy — and perhaps not a very wise one. I
+think imputation by default is not the job of operations that are
+supposed to simply determine a statistic. All moder functions treat
+<code>NA</code>s as genuinely missing values, just like
+<code>mean()</code>, <code>median()</code>, and language primitives such
+as <code>==</code> do. Sometimes, this means the functions can just
+ignore them because a known value is more frequent than the
+next-most-frequent value and all <code>NA</code>s taken together. They
+will only return <code>NA</code> if the user’s question cannot possibly
+be answered by the data.</p>
+<p>All choices about imputation will then be left to the user. In this
+way, moder functions draw a clear line between estimation and
+imputation.</p>
+</div>
+<div id="not-taking-nas-too-seriously" class="section level3">
+<h3>Not taking <code>NA</code>s too seriously</h3>
+<p>Certain other mode implementations return <code>NA</code> whenever
+the input vector contains any <code>NA</code>s at all. This is not
+necessary — in fact, it’s overly conservative. We have seen above that a
+distribution may have a clear set of modes even if some of its values
+are missing. This is a marked difference to <code>mean()</code>, where
+any missings really do make estimation impossible.</p>
+<p>It all depends on the relation between counts: Is the most frequent
+known value at least as frequent as the sum of the counts of the
+second-most-frequent known value and all missing values? If so, this
+value is known to be the mode. Note that <code>mode_first()</code>,
+<code>mode_all()</code> and <code>mode_single()</code> don’t allow for
+ties among known values if any other values are missing (they return
+<code>NA</code>). That is because missings may secretly count for any
+“tied” known value, which would break the tie.</p>
+<p>In a vector like <code>c(1, 1, NA)</code>, the mode is clearly
+<code>1</code>, no matter what the <code>NA</code> stands for. It is
+just as clear as in <code>c(1, 1, 2)</code>. A mode function that
+returns <code>NA</code> instead of <code>1</code> would be incorrect for
+<code>c(1, 1, 2)</code>, so it would be just as incorrect for
+<code>c(1, 1, NA)</code>.</p>
+<p>Again, think of the parallels to base R. <code>NA ^ 2</code> returns
+<code>NA</code>, but <code>NA ^ 0</code> returns <code>1</code>. In the
+second case, we don’t need to know the true value behind <code>NA</code>
+to determine the result. Such knowledge is built into R (Wickham 2019,
+<a href="https://adv-r.hadley.nz/vectors-chap.html#missing-values">ch. 3.2.3</a>),
+and I think function design should emulate this pattern to keep the
+semantics of <code>NA</code> consistent across contexts.</p>
+</div>
+<div id="na-return-types" class="section level3">
+<h3><code>NA</code> return types</h3>
+<p>If a function that is supposed to return one or more modes returns
+<code>NA</code> instead, this <code>NA</code> has the same type as the
+input vector, <code>x</code>. Functions that attempt to count modes or
+to determine their frequency only ever return these integers or
+<code>NA_integer_</code>, i.e., a missing value of type integer.
+However, the differences between <code>NA</code> types are not very
+important (and perhaps not widely known). They can usually be
+disregarded.</p>
+</div>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>Wickham, H. (2019). <em>Advanced R</em> (Second Edition), CRC
+Press/Taylor and Francis Group. <a href="https://adv-r.hadley.nz/index.html" class="uri">https://adv-r.hadley.nz/index.html</a>.</p>
+</div>
+<div class="footnotes footnotes-end-of-document">
+<hr />
+<ol>
+<li id="fn1"><p>The median has some of the same complexities as the
+mode. In a vector like <code>c(1, 1, NA)</code> or even
+<code>c(1, 1, 1, 1, 2, 2, NA)</code>, the median is known to be
+<code>1</code>, regardless of the value behind <code>NA</code>. This
+raises some questions about the way <code>stats::median.default()</code>
+handles missing values. See the <a href="https://github.com/lhdjung/naidem">naidem</a> package for a
+solution to this issue.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
